@@ -6,7 +6,7 @@ from data_processing import extract_features, load_malicious_addresses, load_phi
 app = Flask(__name__)
 
 def calculate_risk_score(probability):
-    return probability[0]
+    return probability[1]  # Probability of the address being fraudulent
 
 def determine_risk_band(risk_score):
     if risk_score >= 0.8:
@@ -23,7 +23,11 @@ def determine_risk_band(risk_score):
 def generate_risk_reason(features, risk_band, risk_text):
     reasons = []
 
-    if risk_band in [1, 2]:
+    # Define thresholds
+    HIGH_OUTGOING_THRESHOLD = 0.01
+    HIGH_TX_INTERVAL_THRESHOLD = 3600  # 1 hour in seconds
+    
+    if risk_band in [1, 2]:  # High Risk
         if features.get('interacted_with_malicious', 0):
             reasons.append("Address has interactions with known malicious addresses.")
         if features['value_out'] > features['value_in']:
@@ -32,13 +36,13 @@ def generate_risk_reason(features, risk_band, risk_text):
             reasons.append("High number of outgoing transactions compared to incoming transactions.")
         if features.get('malicious_interactions_count', 0) > 0:
             reasons.append(f"Number of interactions with malicious addresses: {features['malicious_interactions_count']}.")
-        if features['min_value_out'] < 0.01:
+        if features['min_value_out'] < HIGH_OUTGOING_THRESHOLD:
             reasons.append("Minimum Ether amount sent is very low.")
-        if features['avg_in_tx_interval'] > 3600:
+        if features['avg_in_tx_interval'] > HIGH_TX_INTERVAL_THRESHOLD:
             reasons.append("Average time between inward transactions is high.")
         if not reasons:
             reasons.append("High risk score detected by the model despite no specific indicators.")
-    elif risk_band in [4, 5]:
+    elif risk_band in [4, 5]:  # Low Risk
         if not features.get('interacted_with_malicious', 0):
             reasons.append("No interactions with known malicious addresses.")
         if features['value_in'] > features['value_out']:
@@ -49,6 +53,7 @@ def generate_risk_reason(features, risk_band, risk_text):
             reasons.append("Low risk score detected by the model despite no specific indicators.")
 
     return " | ".join(reasons)
+
 
 def generate_assessment_summary(address, features, risk_band, risk_text, risk_score, risk_reason, is_phishing, malicious_info):
     summary = {
@@ -68,7 +73,6 @@ def generate_assessment_summary(address, features, risk_band, risk_text, risk_sc
         "top_features_influencing_ml_analysis": risk_reason
     }
     return summary
-
 
 @app.route('/scan', methods=['POST'])
 def scan_address():
@@ -95,6 +99,7 @@ def scan_address():
     
     try:
         features_df = extract_features(address, feature_order, malicious_addresses, phishing_addresses)
+        features_df = features_df.drop(columns=['address'], errors='ignore')
         features = features_df.iloc[0].to_dict()
     except KeyError as e:
         print(f"Error extracting features for {address}: {str(e)}")
@@ -103,12 +108,14 @@ def scan_address():
     is_phishing = address.lower() in phishing_addresses
     
     try:
-        model = joblib.load('knn_model.pkl')
+        model = joblib.load('log_reg_model.pkl')
+        scaler = joblib.load('scaler.pkl')
     except FileNotFoundError:
-        return jsonify({'error': 'Model file not found'}), 500
+        return jsonify({'error': 'Model or scaler file not found'}), 500
     
     try:
-        probability = model.predict_proba(features_df)[0]
+        features_scaled = scaler.transform(features_df)
+        probability = model.predict_proba(features_scaled)[0]
         print(f"Model probabilities: {probability}")
         risk_score = calculate_risk_score(probability)
         risk_band, risk_text = determine_risk_band(risk_score)
