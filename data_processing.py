@@ -88,7 +88,6 @@ def extract_features(address, feature_order, malicious_addresses, phishing_addre
         'mean_value': mean(values) if values else 0,
         'std_value': stdev(values) if len(values) > 1 else 0,
         'median_value': median(values) if values else 0,
-        'avg_tx_interval': mean([int(tx['timeStamp']) for tx in transactions]) if len(transactions) > 1 else 0,
         'avg_in_tx_interval': avg_in_tx_interval,
         'min_value_out': min(out_values) if out_values else 0,
         'interacted_with_malicious': int(malicious_interactions['interacted_with_malicious']),

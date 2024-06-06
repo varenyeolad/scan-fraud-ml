@@ -108,7 +108,7 @@ def scan_address():
     is_phishing = address.lower() in phishing_addresses
     
     try:
-        model = joblib.load('log_reg_model.pkl')
+        model = joblib.load('knn_model.pkl')
         scaler = joblib.load('scaler.pkl')
     except FileNotFoundError:
         return jsonify({'error': 'Model or scaler file not found'}), 500
