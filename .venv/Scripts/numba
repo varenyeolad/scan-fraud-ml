@@ -1,4 +1,4 @@
-#!C:\code\ml-scam-scan\.venv\Scripts\python.exe
+#!C:\code\scan-fraud-ml\.venv\Scripts\python.exe
 # -*- coding: UTF-8 -*-
 from __future__ import print_function, division, absolute_import
 

@@ -1,50 +1,74 @@
 from flask import Flask, request, jsonify
 import joblib
-import shap
-from data_processing import extract_features
+import pandas as pd
+from data_processing import extract_features, load_malicious_addresses, load_phishing_addresses
 
-# Инициализация Flask приложения
 app = Flask(__name__)
 
 def calculate_risk_score(probability):
-    return probability[1]
+    return probability[0]
 
 def determine_risk_band(risk_score):
     if risk_score >= 0.8:
-        return 1  # Very High Risk
+        return 1, "Very High Risk"
     elif risk_score >= 0.6:
-        return 2  # High Risk
+        return 2, "High Risk"
     elif risk_score >= 0.4:
-        return 3  # Medium Risk
+        return 3, "Medium Risk"
     elif risk_score >= 0.2:
-        return 4  # Low Risk
+        return 4, "Low Risk"
     else:
-        return 5  # Very Low Risk
+        return 5, "Very Low Risk"
 
-def get_shap_explanation(model, features):
-    try:
-        explainer = shap.KernelExplainer(model.predict_proba, features)
-        shap_values = explainer.shap_values(features)
-        feature_importance = {
-            feature: shap_value for feature, shap_value in zip(features.columns, shap_values[1][0])
-        }
-        sorted_importance = dict(sorted(feature_importance.items(), key=lambda item: abs(item[1]), reverse=True))
-        return sorted_importance
-    except Exception as e:
-        print(f"SHAP explanation error: {e}")
-        return {"error": str(e)}
+def generate_risk_reason(features, risk_band, risk_text):
+    reasons = []
 
-def generate_text_summary(explanation, risk_band):
-    if 'error' in explanation:
-        return "An error occurred while generating the explanation."
+    if risk_band in [1, 2]:
+        if features.get('interacted_with_malicious', 0):
+            reasons.append("Address has interactions with known malicious addresses.")
+        if features['value_out'] > features['value_in']:
+            reasons.append("High outgoing transaction volume compared to incoming volume.")
+        if features['degree_out'] > features['degree_in']:
+            reasons.append("High number of outgoing transactions compared to incoming transactions.")
+        if features.get('malicious_interactions_count', 0) > 0:
+            reasons.append(f"Number of interactions with malicious addresses: {features['malicious_interactions_count']}.")
+        if features['min_value_out'] < 0.01:
+            reasons.append("Minimum Ether amount sent is very low.")
+        if features['avg_in_tx_interval'] > 3600:
+            reasons.append("Average time between inward transactions is high.")
+        if not reasons:
+            reasons.append("High risk score detected by the model despite no specific indicators.")
+    elif risk_band in [4, 5]:
+        if not features.get('interacted_with_malicious', 0):
+            reasons.append("No interactions with known malicious addresses.")
+        if features['value_in'] > features['value_out']:
+            reasons.append("High incoming transaction volume compared to outgoing volume.")
+        if features['degree_in'] > features['degree_out']:
+            reasons.append("High number of incoming transactions compared to outgoing transactions.")
+        if not reasons:
+            reasons.append("Low risk score detected by the model despite no specific indicators.")
 
-    summary = f"The address has been classified with a risk band level of {risk_band}. This is due to the following factors:\n\n"
-    for feature, value in explanation.items():
-        if value > 0:
-            summary += f"- The feature '{feature}' has a positive impact of {value:.2f} on the risk score, indicating higher risk.\n"
-        else:
-            summary += f"- The feature '{feature}' has a negative impact of {value:.2f} on the risk score, indicating lower risk.\n"
+    return " | ".join(reasons)
+
+def generate_assessment_summary(address, features, risk_band, risk_text, risk_score, risk_reason, is_phishing, malicious_info):
+    summary = {
+        "address": address,
+        "overall_assessment": risk_text,
+        "risk_score": risk_score,
+        "blacklist_search_result": "Found in Etherscan Blacklist" if features.get('interacted_with_malicious', 0) else "Not found in blacklist",
+        "blacklist_category": malicious_info.get(address.lower(), {}).get('category', "N/A"),
+        "phishing_dataset_check": "Found in phishing dataset" if is_phishing else "Not found in phishing dataset",
+        "transaction_tracing_result": "No evidence of links to known blacklisted wallets",
+        "whitelist_search_result": "Not found in our whitelist of known entities",
+        "total_transactions": features['degree'],
+        "total_received": features['value_in'],
+        "total_sent": features['value_out'],
+        "current_balance": features['balance'],
+        "ml_analysis_result": f"High-risk score of {risk_score} indicates potential fraud or scam" if risk_band in [1, 2] else f"Low-risk score of {risk_score}",
+        "top_features_influencing_ml_analysis": risk_reason
+    }
     return summary
+
 
 @app.route('/scan', methods=['POST'])
 def scan_address():
@@ -54,46 +78,47 @@ def scan_address():
     if not address:
         return jsonify({'error': 'Address is required'}), 400
     
-    # Загрузка порядка признаков
     try:
         feature_order = joblib.load('feature_order.pkl')
     except FileNotFoundError:
         return jsonify({'error': 'Feature order file not found'}), 500
     
-    # Извлечение признаков
-    features = extract_features(address, feature_order)
+    try:
+        malicious_addresses, malicious_info = load_malicious_addresses()
+    except FileNotFoundError:
+        return jsonify({'error': 'Malicious addresses file not found'}), 500
+
+    try:
+        phishing_addresses = load_phishing_addresses()
+    except FileNotFoundError:
+        return jsonify({'error': 'Phishing addresses file not found'}), 500
     
-    # Проверка полученных признаков
-    print("Extracted features:", features)
+    try:
+        features_df = extract_features(address, feature_order, malicious_addresses, phishing_addresses)
+        features = features_df.iloc[0].to_dict()
+    except KeyError as e:
+        print(f"Error extracting features for {address}: {str(e)}")
+        return jsonify({'error': f'Missing expected feature: {str(e)}'}), 500
     
-    # Загрузка модели
+    is_phishing = address.lower() in phishing_addresses
+    
     try:
         model = joblib.load('knn_model.pkl')
     except FileNotFoundError:
         return jsonify({'error': 'Model file not found'}), 500
     
-    # Предсказание
     try:
-        probability = model.predict_proba(features)[0]
+        probability = model.predict_proba(features_df)[0]
+        print(f"Model probabilities: {probability}")
         risk_score = calculate_risk_score(probability)
-        risk_band = determine_risk_band(risk_score)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 500
+        risk_band, risk_text = determine_risk_band(risk_score)
+        risk_reason = generate_risk_reason(features, risk_band, risk_text)
+        assessment_summary = generate_assessment_summary(address, features, risk_band, risk_text, risk_score, risk_reason, is_phishing, malicious_info)
+    except Exception as e:
+        print(f"Error during prediction for {address}: {str(e)}")
+        return jsonify({'error': f'Error during prediction: {str(e)}'}), 500
     
-    # Получение объяснения SHAP
-    explanation = get_shap_explanation(model, features)
-    
-    # Генерация текстового объяснения
-    summary = generate_text_summary(explanation, risk_band)
-    
-    return jsonify({
-        'address': address,
-        'risk_score': risk_score,
-        'risk_band': risk_band,
-        'probability': probability.tolist(),
-        'explanation': explanation,
-        'summary': summary
-    })
+    return jsonify(assessment_summary)
 
 if __name__ == '__main__':
     app.run(debug=True)
