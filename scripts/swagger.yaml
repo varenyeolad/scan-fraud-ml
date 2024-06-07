@@ -1,0 +1,158 @@
+swagger: '2.0'
+info:
+  title: Scam Explorer API
+  version: "1.0"
+paths:
+  /scan/{address}:
+    get:
+      summary: Scan a crypto address
+      description: Scans a crypto address and evaluates its security level.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          type: string
+          description: The crypto address to scan.
+      responses:
+        200:
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+              overall_assessment:
+                type: string
+              risk_score:
+                type: number
+              blacklist_search_result:
+                type: string
+              blacklist_category:
+                type: string
+              phishing_dataset_check:
+                type: string
+              transaction_tracing_result:
+                type: string
+              whitelist_search_result:
+                type: string
+              total_transactions:
+                type: number
+              total_received:
+                type: number
+              total_sent:
+                type: number
+              current_balance:
+                type: number
+              ml_analysis_result:
+                type: string
+              top_features_influencing_ml_analysis:
+                type: string
+        400:
+          description: Missing or invalid address
+        500:
+          description: Internal server error
+  /top-risk-addresses:
+    get:
+      summary: Get top risk addresses
+      description: Retrieves the top 10 addresses with the highest risk scores.
+      responses:
+        200:
+          description: A list of top risk addresses
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                address:
+                  type: string
+                risk_score:
+                  type: number
+        500:
+          description: Internal server error
+  /address-info/{address}:
+    get:
+      summary: Get detailed information about an address
+      description: Retrieves detailed information about a specific address.
+      parameters:
+        - name: address
+          in: path
+          required: true
+          type: string
+          description: The crypto address to get information for.
+      responses:
+        200:
+          description: Detailed information about the address
+          schema:
+            type: object
+            properties:
+              address:
+                type: string
+              risk_score:
+                type: number
+              risk_reason:
+                type: string
+              overall_assessment:
+                type: string
+              total_transactions:
+                type: number
+              total_received:
+                type: number
+              total_sent:
+                type: number
+              current_balance:
+                type: number
+        404:
+          description: Address not found
+        500:
+          description: Internal server error
+  /report-address:
+    post:
+      summary: Report a crypto address
+      description: Allows users to report a crypto address with a reason.
+      parameters:
+        - in: body
+          name: body
+          schema:
+            type: object
+            required:
+              - address
+              - report_reason
+            properties:
+              address:
+                type: string
+              report_reason:
+                type: string
+      responses:
+        200:
+          description: Address reported successfully
+        404:
+          description: Address not found
+        500:
+          description: Internal server error
+definitions:
+  AddressInfo:
+    type: object
+    properties:
+      address:
+        type: string
+      risk_score:
+        type: number
+      risk_reason:
+        type: string
+      overall_assessment:
+        type: string
+      total_transactions:
+        type: number
+      total_received:
+        type: number
+      total_sent:
+        type: number
+      current_balance:
+        type: number
+  ReportedAddress:
+    type: object
+    properties:
+      address:
+        type: string
+      report_reason:
+        type: string
