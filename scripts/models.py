@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, create_engine
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, create_engine, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -15,6 +15,12 @@ class Address(Base):
     total_received = Column(Float, nullable=False)
     total_sent = Column(Float, nullable=False)
     current_balance = Column(Float, nullable=False)
+    last_scanned = Column(DateTime, nullable=False)
+    blacklist_category = Column(String, nullable=True)
+    blacklist_search_result = Column(String, nullable=True)
+    phishing_dataset_check = Column(String, nullable=True)
+    transaction_tracing_result = Column(String, nullable=True)
+    whitelist_search_result = Column(String, nullable=True)
 
 class ReportedAddress(Base):
     __tablename__ = 'reported_addresses'
@@ -30,3 +36,4 @@ engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
+
