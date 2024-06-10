@@ -1,8 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
-import os
 
 from config import redis_client, limiter, SWAGGER_URL, API_URL
 from models import engine
