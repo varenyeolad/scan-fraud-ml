@@ -30,7 +30,7 @@ class ReportedAddress(Base):
     address = relationship("Address")
 
 # PostgreSQL connection string
-DATABASE_URL = "postgresql://user:jaypark18@localhost:5432/scamexplorer"
+DATABASE_URL = "postgresql://user:jaypark1818@localhost:5432/scamexplorer"
 
 engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(engine)
