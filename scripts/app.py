@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
+from flask_cors import CORS  # Import CORS
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from config import redis_client, limiter, SWAGGER_URL, API_URL
@@ -12,6 +13,7 @@ from routes import blueprint as routes_blueprint
 from services import update_addresses
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS
 
 # Configure Limiter
 limiter.init_app(app)
@@ -41,4 +43,4 @@ scheduler.add_job(update_addresses, 'interval', hours=24)
 scheduler.start()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000)), debug=False)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8000)), debug=False)
