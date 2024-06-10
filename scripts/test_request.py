@@ -13,3 +13,4 @@ try:
 except requests.exceptions.JSONDecodeError:
     print("Failed to decode JSON response")
     print("Response content:", response.text)
+  
