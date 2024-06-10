@@ -6,7 +6,6 @@ from flask import Flask
 from flask_swagger_ui import get_swaggerui_blueprint
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
-
 from config import redis_client, limiter, SWAGGER_URL, API_URL
 from models import engine
 from routes import blueprint as routes_blueprint

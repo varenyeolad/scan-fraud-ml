@@ -11,15 +11,15 @@ ETHERSCAN_API_URL = 'https://api.etherscan.io/api'
 MALICIOUS_ADDRESSES_FILE = './data/etherscan_malicious_labels.csv'
 PHISHING_ADDRESSES_FILE = './data/phishing_node_features_corrected.csv'
 FEATURE_ORDER_FILE = 'feature_order.pkl'
-MODEL_FILE = 'knn_model.pkl'
-SCALER_FILE = 'scaler.pkl'
+MODEL_FILE = '../knn_model.pkl'
+SCALER_FILE = '../scaler.pkl'
 
 # Database Configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://user:jaypark18@localhost:5432/scamexplorer')
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Redis Configuration
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = int(os.getenv('REDIS_PORT'))
 
 # Swagger Configuration
 SWAGGER_URL = '/swagger'
