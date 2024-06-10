@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, create_engine, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-
+from config import DATABASE_URL
 Base = declarative_base()
 
 class Address(Base):
@@ -30,7 +30,6 @@ class ReportedAddress(Base):
     address = relationship("Address")
 
 # PostgreSQL connection string
-DATABASE_URL = "postgresql://user:jaypark1818@localhost:5432/scamexplorer"
 
 engine = create_engine(DATABASE_URL)
 Base.metadata.create_all(engine)
