@@ -73,3 +73,9 @@ The confusion matrix below shows the performance of the trained model on the tes
 
 ![Confusion Matrix](https://github.com/varenyeolad/scan-fraud-ml/blob/main/confusion_matrix.png)
 
+## API Usage
+
+- [poWalletExplorer] (https://github.com/varenyeolad/poWallet-explorer/tree/master/frontend)
+- [poWallet] (https://github.com/varenyeolad/powallet-ex-wallet.git)   
+
+
