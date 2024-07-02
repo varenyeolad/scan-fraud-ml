@@ -75,7 +75,7 @@ The confusion matrix below shows the performance of the trained model on the tes
 
 ## API Usage
 
-- [poWalletExplorer] (https://github.com/varenyeolad/poWallet-explorer/tree/master/frontend)
-- [poWallet] (https://github.com/varenyeolad/powallet-ex-wallet.git)   
+- [poWalletExplorer](https://github.com/varenyeolad/poWallet-explorer/tree/master/frontend)
+- [poWallet](https://github.com/varenyeolad/powallet-ex-wallet.git)   
 
 
