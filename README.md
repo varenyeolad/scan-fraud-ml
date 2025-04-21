@@ -67,12 +67,6 @@ A machine learning-based project designed to classify blockchain addresses as ei
    ```bash
    python scripts/app.py
 
-## Model Evaluation
-
-The confusion matrix below shows the performance of the trained model on the test dataset.
-
-![Confusion Matrix](https://github.com/varenyeolad/scan-fraud-ml/blob/main/confusion_matrix.png)
-
 ## API Usage
 
 - [poWalletExplorer](https://github.com/varenyeolad/poWallet-explorer/tree/master/frontend)
